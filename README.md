@@ -12,6 +12,9 @@ Currently supported controls are:
 - Control-z: Undo
 - Control-y: Redo
 - Control-ScrollWheel Up/Down: Increase/Decrease Pen Size
+- Tab: Select Color
+- Shift-Scroll: Zoom In/Out
+- Shift-Click and Drag: Pan
 
 ## Roadmap
 In the coming days and weeks the following features will be added to ME Paint:
@@ -22,5 +25,6 @@ In the coming days and weeks the following features will be added to ME Paint:
 - Text Tool
 - Image Pasting
 - Shape Tools
+- Brushes
 
 ![image](https://github.com/user-attachments/assets/8fb3270e-3f44-480d-9b9b-fc8c73f4825a)
