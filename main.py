@@ -2,18 +2,20 @@ import tkinter as tk
 from tkinter.colorchooser import askcolor
 
 def start_drawing(event):
-    global is_drawing, prev_x, prev_y, strokes
+    global is_drawing, prev_x, prev_y, strokes, erase_strokes
     is_drawing = True
     prev_x, prev_y = canvas.canvasx(event.x), canvas.canvasy(event.y)
     strokes = []
+    erase_strokes = []
 
 def draw(event):
-    global is_drawing, prev_x, prev_y, strokes
+    global is_drawing, prev_x, prev_y, strokes, erase_strokes
     if is_drawing:
         current_x, current_y = canvas.canvasx(event.x), canvas.canvasy(event.y)
         line = canvas.create_line(prev_x, prev_y, current_x, current_y, fill=drawing_color, width=line_width, capstyle=tk.ROUND, smooth=True, tags="drawing")
         prev_x, prev_y = current_x, current_y
         strokes.append((line, line_width, drawing_color))
+        erase_strokes.append((line, prev_x, prev_y, current_x, current_y, line_width, drawing_color))
 
 def stop_drawing(event):
     global is_drawing, strokes
@@ -82,9 +84,35 @@ def zoom(event):
     canvas.scale("all", x, y, zoom_factor, zoom_factor)
     canvas.config(scrollregion=canvas.bbox("all"))
 
+def erase(event):
+    global undo_stack
+    items_to_erase = []
+
+    for stroke in undo_stack:
+        new_stroke = []
+        for item, x1, y1, x2, y2, width, color in stroke:
+            if (x1 - 5 <= event.x <= x2 + 5) and (y1 - 5 <= event.y <= y2 + 5): 
+                canvas.delete(item)  # Delete stroke if near cursor
+            else:
+                new_stroke.append((item, x1, y1, x2, y2, width, color)) 
+        
+        if new_stroke:
+            items_to_erase.append(new_stroke)
+
+    undo_stack = items_to_erase
+
+def toggle_eraser():
+    global eraser_mode
+    eraser_mode = not eraser_mode
+    if eraser_mode:
+        canvas.bind("<B1-Motion>", erase)
+    else:
+        canvas.bind("<B1-Motion>", draw)
+    eraser_button.config(text="Eraser ON" if eraser_mode else "Eraser OFF")
 
 root = tk.Tk()
 root.title("ME Paint (it's like ms paint but actually not terrible)")
+root.config(cursor="plus")
 
 canvas = tk.Canvas(root, bg="black")
 canvas.pack(fill="both", expand=True)
@@ -94,11 +122,13 @@ drawing_color = "white"
 line_width = 2
 root.geometry("1920x1080")
 
-#controls_frame = tk.Frame(root)
-#controls_frame.pack(side="top", fill="x")
+controls_frame = tk.Frame(root)
+controls_frame.pack(side="top", fill="x")
 
 #color_button = tk.Button(controls_frame, text="Change Color", command=change_pen_color)
 #clear_button = tk.Button(controls_frame, text="Clear Canvas", command=lambda: canvas.delete("all"))
+eraser_button = tk.Button(controls_frame, text="Eraser OFF", command=toggle_eraser)
+eraser_button.pack(side="left", padx=5, pady=5)
 
 #color_button.pack(side="left", padx=5, pady=5)
 #clear_button.pack(side="left", padx=5, pady=5)
@@ -113,7 +143,9 @@ root.geometry("1920x1080")
 undo_stack = []
 redo_stack = []
 strokes = []
+erase_strokes = []
 scale_factor = 1
+eraser_mode = False
 
 canvas.bind("<Button-1>", start_drawing)
 canvas.bind("<B1-Motion>", draw)
