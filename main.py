@@ -2,20 +2,25 @@ import tkinter as tk
 from tkinter.colorchooser import askcolor
 
 def start_drawing(event):
-    global is_drawing, prev_x, prev_y
+    global is_drawing, prev_x, prev_y, strokes
     is_drawing = True
     prev_x, prev_y = event.x, event.y
+    strokes = []
 
 def draw(event):
-    global is_drawing, prev_x, prev_y
+    global is_drawing, prev_x, prev_y, strokes
     if is_drawing:
         current_x, current_y = event.x, event.y
-        canvas.create_line(prev_x, prev_y, current_x, current_y, fill=drawing_color, width=line_width, capstyle=tk.ROUND, smooth=True)
+        line = canvas.create_line(prev_x, prev_y, current_x, current_y, fill=drawing_color, width=line_width, capstyle=tk.ROUND, smooth=True)
         prev_x, prev_y = current_x, current_y
+        strokes.append((line, line_width, drawing_color))
 
 def stop_drawing(event):
-    global is_drawing
+    global is_drawing, strokes
     is_drawing = False
+    if strokes:
+        undo_stack.append(list(strokes))
+        redo_stack.clear()
 
 def change_pen_color():
     global drawing_color
@@ -35,6 +40,25 @@ def change_line_width_scroll(event):
     elif event.delta < 0 and line_width > 1:
         line_width -= 1
 
+def undo(event=None):
+    if undo_stack:
+        last_item = undo_stack.pop()
+        redo_stack.append([(item, canvas.coords(item), width, color) for item, width, color in last_item])
+        for item, _, _ in last_item:
+            canvas.delete(item)
+        
+
+def redo(event=None):
+    if redo_stack:
+        last_item = redo_stack.pop()
+        restored_stroke = []
+        for item, coords, og_width, og_color in last_item:
+            if coords:
+                new_line = canvas.create_line(coords, fill=og_color, width=og_width, capstyle=tk.ROUND, smooth=True)
+                restored_stroke.append((new_line, og_width, og_color))
+        undo_stack.append(restored_stroke)
+
+
 root = tk.Tk()
 root.title("ME Paint (it's like ms paint but actually not terrible)")
 
@@ -45,7 +69,6 @@ is_drawing = False
 drawing_color = "white"
 line_width = 2
 root.geometry("1920x1080")
-
 
 controls_frame = tk.Frame(root)
 controls_frame.pack(side="top", fill="x")
@@ -63,9 +86,15 @@ line_width_slider = tk.Scale(controls_frame, from_=1, to=10, orient="horizontal"
 line_width_slider.set(line_width)
 line_width_slider.pack(side="left", padx=5, pady=5)
 
+undo_stack = []
+redo_stack = []
+strokes = []
+
 canvas.bind("<Button-1>", start_drawing)
 canvas.bind("<B1-Motion>", draw)
 canvas.bind("<ButtonRelease-1>", stop_drawing)
 canvas.bind("<Control-MouseWheel>", change_line_width_scroll)
+root.bind("<Control-z>", undo)
+root.bind("<Control-y>", redo)
 
 root.mainloop()
