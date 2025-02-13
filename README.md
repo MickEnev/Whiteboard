@@ -1,7 +1,7 @@
 # ME Paint
 
 ME Paint is a Whiteboard app that seeks to replace the recently disgraced MS Paint. MS Paint used to be my favorite whiteboard app. It was simple, pre-installed on my pc, and fun to use. Windows 11 changed that. Along with the many issues facing the new MS Paint,
-the one that I find most irredeemable about it is that you can not start a canvas with a black background. As someone who -uses- used MS Paint for solving LeetCode problems, I liked to have a dark background because it was less strenuous on my eyes. I decided 
+the one that I find most irredeemable about it is that you can not start a canvas with a black background. As someone who ~~uses~~ used MS Paint for solving LeetCode problems, I liked to have a dark background because it was less strenuous on my eyes. I decided 
 to take matters into my own hands and make ME Paint.
 
 ## Installation
