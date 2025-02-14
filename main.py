@@ -23,10 +23,11 @@ def stop_drawing(event):
         redo_stack.clear()
 
 def change_pen_color():
-    global drawing_color
+    global drawing_color, old_color
     color = askcolor()[1]
     if color:
         drawing_color = color
+        old_color = drawing_color
 
 def change_pen_color_with_tab(event):
     global drawing_color
@@ -82,6 +83,17 @@ def zoom(event):
     canvas.scale("all", x, y, zoom_factor, zoom_factor)
     canvas.config(scrollregion=canvas.bbox("all"))
 
+def erase(event):
+    global drawing_color, canvas, erase_mode, old_color
+    if not erase_mode:
+        old_color = drawing_color
+        drawing_color = canvas.cget("bg")
+        erase_mode = True
+    else:
+        drawing_color = old_color
+        erase_mode = False
+    
+
 
 root = tk.Tk()
 root.title("ME Paint (it's like ms paint but actually not terrible)")
@@ -90,7 +102,9 @@ canvas = tk.Canvas(root, bg="black")
 canvas.pack(fill="both", expand=True)
 
 is_drawing = False
+erase_mode = False
 drawing_color = "white"
+old_color = "white"
 line_width = 2
 root.geometry("1920x1080")
 
@@ -125,5 +139,6 @@ root.bind("<Tab>", change_pen_color_with_tab)
 canvas.bind("<Shift-ButtonPress-1>", start_pan)
 canvas.bind("<Shift-B1-Motion>", do_pan)
 canvas.bind("<MouseWheel>", zoom)
+root.bind("<e>", erase)
 
 root.mainloop()
