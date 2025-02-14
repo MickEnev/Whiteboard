@@ -1,15 +1,19 @@
 import tkinter as tk
 from tkinter.colorchooser import askcolor
+from PIL import Image, ImageDraw, ImageTk, ImageColor
 
 def start_drawing(event):
-    global is_drawing, prev_x, prev_y, strokes
+    global is_drawing, prev_x, prev_y, strokes, fill_mode
+    if fill_mode:
+        fill_area(event)
+        return
     is_drawing = True
     prev_x, prev_y = canvas.canvasx(event.x), canvas.canvasy(event.y)
     strokes = []
 
 def draw(event):
-    global is_drawing, prev_x, prev_y, strokes
-    if is_drawing:
+    global is_drawing, prev_x, prev_y, strokes, fill_mode
+    if is_drawing and not fill_mode:
         current_x, current_y = canvas.canvasx(event.x), canvas.canvasy(event.y)
         line = canvas.create_line(prev_x, prev_y, current_x, current_y, fill=drawing_color, width=line_width, capstyle=tk.ROUND, smooth=True, tags="drawing")
         prev_x, prev_y = current_x, current_y
@@ -22,15 +26,10 @@ def stop_drawing(event):
         undo_stack.append(list(strokes))
         redo_stack.clear()
 
-def change_pen_color():
-    global drawing_color, old_color
-    color = askcolor()[1]
-    if color:
-        drawing_color = color
-        old_color = drawing_color
-
 def change_pen_color_with_tab(event):
     global drawing_color
+    if erase_mode:
+        return
     color = askcolor()[1]
     if color:
         drawing_color = color
@@ -92,7 +91,49 @@ def erase(event):
     else:
         drawing_color = old_color
         erase_mode = False
+
+def fill_area(event):
+    global image, img_tk
+
+    x, y = int(canvas.canvasx(event.x)), int(canvas.canvasy(event.y))
+    target_color = image.getpixel((x, y))  # Get the color at the clicked point
+
+    # Convert hex or color names to RGB
+    fill_rgb = ImageColor.getrgb(drawing_color)  
+
+    # Ensure we're not filling an already-colored area
+    if target_color == fill_rgb:
+        return  
+
+    # Apply flood fill with the converted RGB color
+    ImageDraw.floodfill(image, (x, y), fill_rgb, thresh=5)
+
+    # Update the canvas with the new image
+    img_tk = ImageTk.PhotoImage(image)
+    canvas.itemconfig(image_on_canvas, image=img_tk)
+
+def resize_canvas(event):
+    """Resizes the background image dynamically when the window is resized."""
+    global image, img_tk, image_on_canvas
+
+    # Get new canvas dimensions
+    new_width = event.width
+    new_height = event.height
+
+    # Resize the image while maintaining original drawing
+    image_resized = image.resize((new_width, new_height), Image.Resampling.LANCZOS)
     
+    # Convert to Tkinter format and update canvas
+    img_tk = ImageTk.PhotoImage(image_resized)
+    canvas.itemconfig(image_on_canvas, image=img_tk)
+    canvas.config(scrollregion=canvas.bbox("all"))
+
+def toggle_fill_mode(event):
+    global fill_mode
+    if fill_mode:
+        fill_mode = False
+    else:
+        fill_mode = True
 
 
 root = tk.Tk()
@@ -101,8 +142,14 @@ root.title("ME Paint (it's like ms paint but actually not terrible)")
 canvas = tk.Canvas(root, bg="black")
 canvas.pack(fill="both", expand=True)
 
+initial_width, initial_height = 800, 600
+image = Image.new("RGB", (initial_width, initial_height), "white")
+img_tk = ImageTk.PhotoImage(image)
+image_on_canvas = canvas.create_image(0, 0, anchor="nw", image=img_tk)
+
 is_drawing = False
 erase_mode = False
+fill_mode = False
 drawing_color = "white"
 old_color = "white"
 line_width = 2
@@ -140,5 +187,6 @@ canvas.bind("<Shift-ButtonPress-1>", start_pan)
 canvas.bind("<Shift-B1-Motion>", do_pan)
 canvas.bind("<MouseWheel>", zoom)
 root.bind("<e>", erase)
+root.bind("<f>", toggle_fill_mode)
 
 root.mainloop()
