@@ -14,7 +14,7 @@ def draw(event):
         current_x, current_y = canvas.canvasx(event.x), canvas.canvasy(event.y)
         line = canvas.create_line(prev_x, prev_y, current_x, current_y, fill=drawing_color, width=line_width, capstyle=tk.ROUND, smooth=True, tags="drawing")
         prev_x, prev_y = current_x, current_y
-        strokes.append((line, line_width, drawing_color))
+        strokes.append((line, prev_x, prev_y, current_x, current_y, line_width, drawing_color))
         erase_strokes.append((line, prev_x, prev_y, current_x, current_y, line_width, drawing_color))
 
 def stop_drawing(event):
@@ -51,8 +51,8 @@ def change_line_width_scroll(event):
 def undo(event=None):
     if undo_stack:
         last_item = undo_stack.pop()
-        redo_stack.append([(item, canvas.coords(item), width, color) for item, width, color in last_item])
-        for item, _, _ in last_item:
+        redo_stack.append([(item, canvas.coords(item), prev_x, prev_y, current_x, current_y, width, color) for item, prev_x, prev_y, current_x, current_y, width, color in last_item])
+        for item, _, _, _, _, _, _ in last_item:
             canvas.delete(item)
         
 
@@ -60,10 +60,10 @@ def redo(event=None):
     if redo_stack:
         last_item = redo_stack.pop()
         restored_stroke = []
-        for item, coords, og_width, og_color in last_item:
+        for item, coords, ogx, ogy, cx, cy, og_width, og_color in last_item:
             if coords:
                 new_line = canvas.create_line(coords, fill=og_color, width=og_width, capstyle=tk.ROUND, smooth=True, tags="drawing")
-                restored_stroke.append((new_line, og_width, og_color))
+                restored_stroke.append((new_line, ogx, ogy, cx, cy, og_width, og_color))
         undo_stack.append(restored_stroke)
 
 def start_pan(event):
